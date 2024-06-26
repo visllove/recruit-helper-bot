@@ -13,3 +13,7 @@ images
 # Игнорирование каталогов __pycache__ и файлов .pyc, .pyo, .pyd
 __pycache__/
 *.py[cod]
+
+# Игнорирование лог-файлов
+*.log
+logs/
