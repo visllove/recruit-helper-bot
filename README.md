@@ -86,7 +86,9 @@ CREATE TABLE IF NOT EXISTS llm_cache (
 Запуск
 `bash
 python app.py
+`
 # или
+`bash
 python -m app
-bash
+`
 `
