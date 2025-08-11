@@ -57,8 +57,7 @@ DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/atsdb
 OPENAI_API_KEY=sk-...
 
 **Модель и лимиты**
-LLM_MODEL=gpt-4o
-MAX_OUTPUT_TOKENS=1200
+LLM_MODEL=gpt-4o (MAX_OUTPUT_TOKENS=1200)
 
 **Извлечение текста резюме**
 ATS_EXTRACT_MODE=local      local | llm
