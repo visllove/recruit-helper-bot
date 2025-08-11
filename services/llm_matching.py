@@ -1,4 +1,3 @@
-# services/llm_matching.py
 import os
 import json
 import hashlib
@@ -18,11 +17,12 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o")
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "1200"))
 
 # как извлекать текст резюме: "local" (по умолчанию) или "llm"
-ATS_EXTRACT_MODE = os.getenv("ATS_EXTRACT_MODE", "local").strip().lower()  # local | llm
-# включить OCR (tesseract) как промежуточный шаг, если PDF без текста
+ATS_EXTRACT_MODE = os.getenv("ATS_EXTRACT_MODE", "local").strip().lower()
+
+# включить OCR на базе tesseract как промежуточный шаг, если PDF без текста
 ATS_OCR = os.getenv("ATS_OCR", "0").strip().lower() in {"1", "true", "yes"}
 
-# версии правил/промптов — меняем при правках, чтобы инвалидировать кэш
+# версии правил/промптов — меняем при правках, чтобы удалить старый кэш
 PROMPT_VERSION = os.getenv("PROMPT_VERSION", "2025-08-11a")
 RULES_VERSION  = os.getenv("RULES_VERSION",  "2025-08-11a")
 
@@ -44,7 +44,7 @@ def _cache_key_requirements(vacancy_text: str) -> str:
         PROMPT_VERSION.encode("utf-8"),
         vacancy_text.encode("utf-8", "ignore"),
     )
-    return key  # всегда 64 символа
+    return key
 
 def _cache_key_final_from_text(vacancy_text: str, resume_text_sha: str) -> str:
     """ ключ финального результата (когда есть локально извлечённый текст) """
@@ -85,7 +85,7 @@ async def _cache_get(session: AsyncSession, key: str) -> Optional[Dict[str, Any]
 async def _cache_set(session: AsyncSession, key: str, payload: Dict[str, Any]) -> None:
     payload_str = json.dumps(payload, ensure_ascii=False)
     stmt = insert(LLMCache).values(key=key, payload_json=payload_str)
-    # idempotent upsert
+    
     stmt = stmt.on_conflict_do_update(
         index_elements=[LLMCache.key],
         set_={"payload_json": payload_str}
@@ -105,11 +105,11 @@ async def _get_vacancy_text(session: AsyncSession, vacancy_id: int) -> str:
     text = "\n".join(p.strip() for p in parts if p and p.strip())
     return "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
-# ===================== локальный парсинг PDF =====================
+# ===================== локальный парсинг PDF (PyMuPDF) =====================
 def _extract_text_pymupdf(pdf_bytes: bytes) -> Optional[str]:
     """Быстрый извлекатель текста для цифровых PDF (без OCR)."""
     try:
-        import fitz  # PyMuPDF
+        import fitz
     except Exception:
         return None
     try:
@@ -128,7 +128,7 @@ def _extract_text_pymupdf(pdf_bytes: bytes) -> Optional[str]:
     return full if full else None
 
 def _extract_text_ocr_tesseract(pdf_bytes: bytes) -> Optional[str]:
-    """OCR как резерв (требует tesseract и poppler для pdf2image)."""
+    """OCR как резерв, если PyMuPDF не сработал (требует tesseract и poppler для pdf2image)."""
     if not ATS_OCR:
         return None
     try:
