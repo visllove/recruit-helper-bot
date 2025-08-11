@@ -25,17 +25,25 @@
 - (Опционально) Tesseract и Poppler (для OCR)
 
 Установка
-`bash
+
+```
 git clone <repo-url>
 cd recruit-helper-bot
-`
 python -m venv .venv
+```
+
 **Linux/macOS**
-source .venv/bin/activate
+
+`source .venv/bin/activate`
+
 **Windows**
+
+```
 .venv\Scripts\activate
 
 pip install -r requirements.txt
+```
+
 Настройка окружения
 Создайте файл .env в корне:
 
@@ -65,22 +73,20 @@ LOG_LEVEL=INFO
 База данных
 Минимально используется KV-таблица кэша:
 
-`sql
+```
 CREATE TABLE IF NOT EXISTS llm_cache (
   key          VARCHAR(64) PRIMARY KEY,  -- строго 64-символьный SHA-256 hex
   payload_json TEXT NOT NULL,
   created_at   TIMESTAMPTZ DEFAULT now(),
   updated_at   TIMESTAMPTZ DEFAULT now()
 );
-`
+```
 
 Рекомендуется управлять схемой через Alembic. При необходимости можно заменить payload_json на JSONB.
 
 Запуск
-`bash
-python app.py
-`
+`python app.py`
+
 **или**
-`bash
-python -m app
-`
+
+`python -m app`
