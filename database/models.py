@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, Float, String, Text, func, ForeignKey
+from sqlalchemy import DateTime, String, Text, func, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # Класс, наследующийся от класса для таблиц, определенного в SQLAlchemy
@@ -80,3 +80,10 @@ class Category(Base):
     
     vacancies: Mapped[list['Vacancy']] = relationship('Vacancy', back_populates='category')
 
+
+
+# Кэш для LLM
+class LLMCache(Base):
+    __tablename__ = "llm_cache"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)

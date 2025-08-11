@@ -3,6 +3,7 @@ import asyncio
 import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
@@ -27,8 +28,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ALLOWED_UPDATES = ['message', 'edited_message', 'callback_query']
+TOKEN = os.getenv('TOKEN')
 
-bot = Bot(token=os.getenv('TOKEN'), parse_mode=ParseMode.HTML)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 bot.my_admins_list = []
 dp = Dispatcher()
 

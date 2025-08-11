@@ -37,7 +37,7 @@ ADMIN_KB = get_keyboard(
     sizes=(2, 2, 1),
 )
 
-# Команда для активации команд администратора
+
 @admin_router.message(Command("admin"))
 async def admin_features(message: types.Message):
     """
@@ -54,6 +54,7 @@ async def vac_list(message: types.Message):
     await message.answer("Список вакансий:")
     logger.info(f"Vacancy list requested by {message.from_user.id}")
 
+
 @admin_router.message(F.text == "Изменить вакансию")
 async def edit_vac(message: types.Message):
     """
@@ -62,6 +63,7 @@ async def edit_vac(message: types.Message):
     await message.answer("Выберите вакансию для изменения")
     logger.info(f"Vacancy edit requested by {message.from_user.id}")
 
+
 @admin_router.message(F.text == "Удалить вакансию")
 async def delete_vac(message: types.Message):
     """
@@ -69,6 +71,7 @@ async def delete_vac(message: types.Message):
     """
     await message.answer("Выберите вакансию для удаления")
     logger.info(f"Vacancy delete requested by {message.from_user.id}")
+
 
 @admin_router.message(F.text == "Список вакансий")
 async def admin_features(message: types.Message, session: AsyncSession):
@@ -83,6 +86,7 @@ async def admin_features(message: types.Message, session: AsyncSession):
     except Exception as e:
         logger.error(f"Error in admin_features: {e}", exc_info=True)
         await message.answer("Произошла ошибка при получении категорий.")
+
 
 @admin_router.callback_query(F.data.startswith('category_'))
 async def get_vacancies(callback: types.CallbackQuery, session: AsyncSession):
@@ -108,6 +112,7 @@ async def get_vacancies(callback: types.CallbackQuery, session: AsyncSession):
     except Exception as e:
         logger.error(f"Error in get_vacancies: {e}", exc_info=True)
         await callback.answer("Произошла ошибка при получении вакансий.")
+
 
 @admin_router.callback_query(F.data.startswith("delete_"))
 async def delete_vacancy_callback(callback: types.CallbackQuery, session: AsyncSession):
@@ -304,7 +309,7 @@ async def add_name(message: types.Message, state: FSMContext):
             await message.answer("Название вакансии не должно превышать 100 символов. \nВведите другое название")
             return
         await state.update_data(name=message.text)
-    await message.answer("Введите описание вакансии")
+    await message.answer("Введите описание вакансии (не более 900 символов)")
     await state.set_state(AddVacancy.description)
 
 @admin_router.message(AddVacancy.name)
@@ -386,7 +391,7 @@ async def add_vacancy_check(message: types.Message, state: FSMContext, session: 
     data = await state.get_data()
 
     # Только для теста, потом убрать!!!
-    await message.answer(str(data))
+    # await message.answer(str(data))
 
     try:
         if AddVacancy.vacancy_for_change:

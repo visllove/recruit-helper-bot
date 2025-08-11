@@ -1,4 +1,3 @@
-import fitz  # PyMuPDF
 import os
 import logging
 from aiogram import F, types, Router, Bot
@@ -10,7 +9,9 @@ from database.orm_query import orm_add_to_cart, orm_add_user, orm_save_resume
 from filters.chat_types import ChatTypeFilter
 from handlers.menu_processing import get_menu_content
 from kbds.inline import MenuCallBack
-from analysis.analysis import resume_analysis
+
+from services.llm_matching import score_resume_api
+from database.orm_query import orm_save_resume
 
 
 
@@ -75,48 +76,60 @@ async def handle_resume_file(message: types.Message, state: FSMContext, session:
     if document.mime_type != 'application/pdf':
         await message.reply("Пожалуйста, отправьте резюме в виде PDF-файла.")
         return
-
-    resumes_dir = "resumes"
-    if not os.path.exists(resumes_dir):
-        os.makedirs(resumes_dir)
-
-    file_info = await bot.get_file(document.file_id)
-    file_path = file_info.file_path
-    downloaded_file = await bot.download_file(file_path)
     
-    local_file_path = os.path.join(resumes_dir, f"{document.file_id}.pdf")
-    with open(local_file_path, 'wb') as f:
-        f.write(downloaded_file.read())
+    data = await state.get_data()
+    vacancy_id = data.get("vacancy_id")
+    if not vacancy_id:
+        await message.reply("Не найдена выбранная вакансия. Откройте список вакансий и выберите заново.")
+        await state.clear()
+        return
 
     try:
-        doc = fitz.open(local_file_path)
-        text = ""
-        for page in doc:
-            text += page.get_text()
+        file_info = await bot.get_file(document.file_id)
+        downloaded = await bot.download_file(file_info.file_path)
+        resume_bytes = downloaded.read()
 
-        user_id = message.from_user.id
+        # логируем сам факт загрузки (текст не извлекаем локально)
+        await orm_save_resume(session,
+                              user_id=message.from_user.id,
+                              vacancy_id=vacancy_id,
+                              file_id=document.file_id,
+                              resume_text="")
 
-        # Получаем vacancy_id из FSM контекста
-        data = await state.get_data()
-        vacancy_id = data.get('vacancy_id')
-        file_id = document.file_id
-        
-        await orm_save_resume(session, user_id, vacancy_id, file_id, text)
-        
-        # Анализируем резюме и вакансию
-        similarity_score = await resume_analysis(session, vacancy_id, resume_text=text)
+        await message.reply("Резюме получено. Выполняю оценку…")
 
-        await message.reply("Ваше резюме было успешно получено и отправлено на проверку.")
-        await message.answer(f'Ваше резюме соответствует вакансии с такой оценкой: {round(similarity_score, 2)}')
+        result = await score_resume_api(session, vacancy_id=vacancy_id, resume_bytes=resume_bytes)
+        if "error" in result:
+            await message.answer("Не удалось выполнить оценку. Попробуйте ещё раз позже.")
+            await state.clear()
+            return
+
+        score = result["score_overall"]
+        subs  = result["subscores"]
+        matched = ", ".join(result["skills"]["matched"]) if result["skills"]["matched"] else "—"
+        missing = ", ".join(result["skills"]["missing"]) if result["skills"]["missing"] else "—"
+        snips = result.get("highlights", [])[:3]
+
+        lines = [
+            f"Совместимость: <b>{score:.1f}%</b>",
+            f"Must-have: {subs.get('must_have', 0):.1f}%",
+            f"Optional: {subs.get('optional', 0):.1f}%",
+            f"Совпавшие навыки/требования: {matched}",
+            f"Чего не хватает: {missing}",
+        ]
+        if snips:
+            lines.append("\nЦитаты из резюме:")
+            for i, s in enumerate(snips, 1):
+                lines.append(f"{i}) {s}")
+
+        await message.answer("\n".join(lines), parse_mode="HTML")
 
     except Exception as e:
-        await message.reply("Произошла ошибка при обработке файла. Попробуйте еще раз.")
-        logger.error(f"Error in handle_resume_file: {e}", exc_info=True)
-    finally:
-        doc.close()  # Закрываем документ, чтобы освободить файл
-        os.remove(local_file_path)
+        logger.exception("Произошла ошибка при обработке резюме")
+        await message.reply("Произошла ошибка при обработке файла. Попробуйте ещё раз.")
 
-    await state.clear()
+    finally:
+        await state.clear()
 
 # Возврат к меню после команды "Отменить"
 @user_private_router.message(StateFilter(ResumeState.waiting_for_resume), F.text.lower() == "отменить")
