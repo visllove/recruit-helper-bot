@@ -35,7 +35,7 @@ python -m venv .venv
 # Linux/macOS
 source .venv/bin/activate
 # Windows
-# .venv\Scripts\activate
+.venv\Scripts\activate
 
 pip install -r requirements.txt
 Настройка окружения
@@ -58,8 +58,8 @@ LLM_MODEL=gpt-4o
 MAX_OUTPUT_TOKENS=1200
 
 # Извлечение текста резюме
-ATS_EXTRACT_MODE=local      # local | llm
-ATS_OCR=0                   # 1 = включить OCR fallback (tesseract + poppler)
+ATS_EXTRACT_MODE=local      local | llm
+ATS_OCR=0                   1 = включить OCR fallback (tesseract + poppler)
 
 # Версии правил/промптов (для инвалидирования кэша)
 PROMPT_VERSION=2025-08-11a
@@ -70,7 +70,7 @@ LOG_LEVEL=INFO
 База данных
 Минимально используется KV-таблица кэша:
 
-sql
+`sql
 Copy
 Edit
 CREATE TABLE IF NOT EXISTS llm_cache (
@@ -79,12 +79,14 @@ CREATE TABLE IF NOT EXISTS llm_cache (
   created_at   TIMESTAMPTZ DEFAULT now(),
   updated_at   TIMESTAMPTZ DEFAULT now()
 );
+`
+
 Рекомендуется управлять схемой через Alembic. При необходимости можно заменить payload_json на JSONB.
 
 Запуск
-bash
-Copy
-Edit
+`bash
 python app.py
 # или
 python -m app
+bash
+`
