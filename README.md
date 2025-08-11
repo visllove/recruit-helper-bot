@@ -25,54 +25,47 @@
 - (Опционально) Tesseract и Poppler (для OCR)
 
 Установка
-bash
-Copy
-Edit
+`bash
 git clone <repo-url>
 cd recruit-helper-bot
-
+`
 python -m venv .venv
-# Linux/macOS
+**Linux/macOS**
 source .venv/bin/activate
-# Windows
+**Windows**
 .venv\Scripts\activate
 
 pip install -r requirements.txt
 Настройка окружения
 Создайте файл .env в корне:
 
-env
-Copy
-Edit
-# Telegram
+**Telegram**
 BOT_TOKEN=123456:ABC...
 
-# База
+**База**
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/atsdb
 
-# OpenAI
+**OpenAI**
 OPENAI_API_KEY=sk-...
 
-# Модель и лимиты
+**Модель и лимиты**
 LLM_MODEL=gpt-4o
 MAX_OUTPUT_TOKENS=1200
 
-# Извлечение текста резюме
+**Извлечение текста резюме**
 ATS_EXTRACT_MODE=local      local | llm
 ATS_OCR=0                   1 = включить OCR fallback (tesseract + poppler)
 
-# Версии правил/промптов (для инвалидирования кэша)
+**Версии правил/промптов (для инвалидирования кэша)**
 PROMPT_VERSION=2025-08-11a
 RULES_VERSION=2025-08-11a
 
-# Логи (опц.)
+**Логи (опцинально)**
 LOG_LEVEL=INFO
 База данных
 Минимально используется KV-таблица кэша:
 
 `sql
-Copy
-Edit
 CREATE TABLE IF NOT EXISTS llm_cache (
   key          VARCHAR(64) PRIMARY KEY,  -- строго 64-символьный SHA-256 hex
   payload_json TEXT NOT NULL,
@@ -87,8 +80,7 @@ CREATE TABLE IF NOT EXISTS llm_cache (
 `bash
 python app.py
 `
-# или
+**или**
 `bash
 python -m app
-`
 `
